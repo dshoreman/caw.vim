@@ -10,6 +10,35 @@ local M = {}
 function M.has_syntax(lnum, col)
   local col = col - 1
   local bufnr = vim.api.nvim_get_current_buf()
+
+  if 1 == vim.fn.has('nvim-0.9.0') then
+    local items = vim.inspect_pos(bufnr, lnum - 1, col)
+
+    if 0 == #items.treesitter then
+      return false
+    end
+
+    for _, capture in ipairs(items.treesitter) do
+      if string.match(capture.hl_group, '@comment') then
+        return true
+      end
+    end
+
+    return false
+  end
+
+  if 1 == vim.fn.has('nvim-0.8.0') then
+    local captures = vim.treesitter.get_captures_at_pos(bufnr, lnum - 1, col)
+
+    for _, capture in ipairs(captures) do
+      if string.match(capture.capture, 'comment') then
+        return true
+      end
+    end
+
+    return false
+  end
+
   local filetype = vim.api.nvim_buf_get_option(bufnr, 'ft')
   local lang = languages[filetype] or filetype
   if not require"vim.treesitter.language".require_language(lang, nil, true) then
